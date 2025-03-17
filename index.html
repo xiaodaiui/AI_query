@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大语言模型知识测验</title>
+    <!-- 添加微信JS-SDK -->
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.6.0.js"></script>
+    <!-- 添加QRCode.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode.js@1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #8EACC0;
+            --primary-light: #A9C2D1;
+            --primary-dark: #6A8A9E;
+            --secondary-color: #F0F4F7;
+            --text-color: #333;
+            --correct-color: #4CAF50;
+            --wrong-color: #F44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 12px 24px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: #ddd;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #ccc;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .score-display {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin-bottom: 20px;
+        }
+        
+        .question {
+            font-size: 18px;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .option {
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .option:hover {
+            border-color: var(--primary-light);
+            background-color: #f9f9f9;
+        }
+        
+        .option.selected {
+            border-color: var(--primary-color);
+            background-color: var(--primary-light);
+            color: white;
+        }
+        
+        .option.correct {
+            border-color: var(--correct-color);
+            background-color: rgba(76, 175, 80, 0.1);
+        }
+        
+        .option.wrong {
+            border-color: var(--wrong-color);
+            background-color: rgba(244, 67, 54, 0.1);
+        }
+        
+        .explanation {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .result-card {
+            text-align: center;
+        }
+        
+        .result-score {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-dark);
+            margin: 20px 0;
+        }
+        
+        .result-comment {
+            font-size: 18px;
+            margin-bottom: 30px;
+        }
+        
+        .share-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .share-tip {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            padding-top: 50px;
+        }
+        
+        .share-tip img {
+            max-width: 80%;
+            margin-bottom: 20px;
+        }
+        
+        .share-tip p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        
+        .close-tip {
+            background-color: white;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .participant-count {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .share-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent;
+            border: none;
+            color: var(--primary-dark);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .qrcode-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px 0;
+        }
+        
+        .qrcode-container p {
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        #qrcode {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .question {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 欢迎页面 -->
+        <div id="welcome-screen" class="card">
+            <div class="title">大语言模型高级知识测验</div>
+            <div class="subtitle">测试你对大语言模型的专业理解程度</div>
+            <div class="participant-count">已有 <span id="participant-number">1,234</span> 人参与测试</div>
+            <button id="start-btn" class="btn">开始测验</button>
+        </div>
+        
+        <!-- 测验页面 -->
+        <div id="quiz-screen" class="card" style="display: none;">
+            <button class="share-btn" id="quiz-share-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
+                </svg>
+                分享
+            </button>
+            <div class="header">
+                <div class="score-display">得分: <span id="current-score">0</span>/10</div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="question" id="question-text"></div>
+            <div class="options" id="options-container"></div>
+            <div class="explanation" id="explanation-text"></div>
+            <button id="next-btn" class="btn" style="display: none;">下一题</button>
+        </div>
+        
+        <!-- 结果页面 -->
+        <div id="result-screen" class="card result-card" style="display: none;">
+            <div class="title">测验完成！</div>
+            <div class="result-score"><span id="final-score">0</span>/10</div>
+            <div class="result-comment" id="result-comment"></div>
+            <div class="share-container">
+                <button id="restart-btn" class="btn btn-secondary">重新开始</button>
+                <button id="result-share-btn" class="btn">分享结果</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分享提示 -->
+    <div class="share-tip" id="share-tip">
+        <p>点击右上角的"..."</p>
+        <p>选择"分享到朋友圈"即可分享测验结果</p>
+        <div class="close-tip" id="close-tip">我知道了</div>
+    </div>
+    
+    <script>
+        // 测验题目数据
+        const quizData = [
+            {
+                question: "在Transformer架构中，以下哪种注意力机制最常用于大语言模型？",
+                options: [
+                    "加性注意力（Additive Attention）",
+                    "多头自注意力（Multi-head Self-attention）",
+                    "局部注意力（Local Attention）",
+                    "稀疏注意力（Sparse Attention）"
+                ],
+                correct: 1,
+                explanation: "多头自注意力（Multi-head Self-attention）是Transformer架构的核心组件，也是现代大语言模型如GPT、BERT等的基础。它允许模型在不同的表示子空间中并行地关注不同位置的信息，从而捕捉更丰富的上下文关系。"
+            },
+            {
+                question: "以下哪种技术不是为了解决大语言模型训练或推理过程中的内存限制问题？",
+                options: [
+                    "梯度检查点（Gradient Checkpointing）",
+                    "混合精度训练（Mixed Precision Training）",
+                    "知识蒸馏（Knowledge Distillation）",
+                    "注意力掩码（Attention Masking）"
+                ],
+                correct: 3,
+                explanation: "注意力掩码（Attention Masking）主要用于控制模型在处理序列时的注意力范围，例如在因果语言模型中防止信息泄露，而不是为了解决内存限制问题。其他三个选项都是为了减少内存使用或计算需求的技术。"
+            },
+            {
+                question: "在大语言模型的上下文学习（In-context Learning）中，以下哪项描述是正确的？",
+                options: [
+                    "模型需要通过梯度下降更新参数来学习新任务",
+                    "模型通过少量示例直接在推理阶段适应新任务，无需参数更新",
+                    "模型需要在特定任务上进行微调才能表现良好",
+                    "模型只能处理训练时见过的任务类型"
+                ],
+                correct: 1,
+                explanation: "上下文学习（In-context Learning）是大语言模型的一个重要能力，它允许模型仅通过在输入中提供任务描述和少量示例（few-shot examples），就能在推理阶段适应新任务，而无需更新模型参数。这是GPT系列模型的一个关键特性。"
+            },
+            {
+                question: "以下哪种参数高效微调（PEFT）方法不会引入新的可训练参数？",
+                options: [
+                    "LoRA（Low-Rank Adaptation）",
+                    "Prompt Tuning",
+                    "BitFit",
+                    "量化感知训练（Quantization-Aware Training）"
+                ],
+                correct: 3,
+                explanation: "量化感知训练（Quantization-Aware Training）是一种模型压缩技术，它在训练过程中模拟量化效果，但不引入新的可训练参数。而LoRA通过低秩矩阵分解引入新参数，Prompt Tuning添加可学习的连续提示向量，BitFit则选择性地训练偏置参数。"
+            },
+            {
+                question: "在评估大语言模型的幻觉（Hallucination）问题时，以下哪种方法最不适合？",
+                options: [
+                    "事实一致性检查（Factual Consistency）",
+                    "知识图谱验证（Knowledge Graph Verification）",
+                    "困惑度评分（Perplexity Scoring）",
+                    "人工评估（Human Evaluation）"
+                ],
+                correct: 2,
+                explanation: "困惑度评分（Perplexity Scoring）主要用于评估语言模型对文本的预测能力和流畅度，而不是直接评估模型输出的事实准确性或幻觉问题。其他选项都是评估模型输出与事实一致性的有效方法。"
+            },
+            {
+                question: "在检索增强生成（RAG）系统中，以下哪个组件对减少幻觉最为关键？",
+                options: [
+                    "文档索引策略",
+                    "相似度计算算法",
+                    "检索结果重排序",
+                    "检索内容与生成内容的融合方式"
+                ],
+                correct: 3,
+                explanation: "检索内容与生成内容的融合方式对减少幻觉最为关键，因为它决定了模型如何利用检索到的事实信息来约束生成过程。即使检索到了高质量的相关文档，如果融合不当，模型仍可能产生与检索内容不一致的幻觉。"
+            },
+            {
+                question: "以下哪种技术不是专门为处理长文本而设计的？",
+                options: [
+                    "稀疏注意力（Sparse Attention）",
+                    "递归状态空间模型（Recurrent State Space Models）",
+                    "滑动窗口注意力（Sliding Window Attention）",
+                    "知识蒸馏（Knowledge Distillation）"
+                ],
+                correct: 3,
+                explanation: "知识蒸馏（Knowledge Distillation）是一种将大模型知识转移到小模型的技术，主要用于模型压缩，而非专门为处理长文本设计。其他选项都是为了高效处理长序列文本而开发的技术，通过改进注意力机制或模型架构来降低长序列处理的计算复杂度。"
+            },
+            {
+                question: "在大语言模型的推理优化中，以下哪种技术不会降低模型的精度？",
+                options: [
+                    "KV缓存（KV Cache）",
+                    "量化（Quantization）",
+                    "剪枝（Pruning）",
+                    "知识蒸馏（Knowledge Distillation）"
+                ],
+                correct: 0,
+                explanation: "KV缓存（KV Cache）是一种通过缓存先前计算的键值对来加速自回归生成的技术，它不会改变模型的权重或计算精度，只是避免了重复计算。而量化、剪枝和知识蒸馏都可能导致模型精度的某种程度降低，尽管这种降低通常是可控的。"
+            },
+            {
+                question: "以下哪种方法不属于大语言模型的对齐技术（Alignment Techniques）？",
+                options: [
+                    "RLHF（Reinforcement Learning from Human Feedback）",
+                    "DPO（Direct Preference Optimization）",
+                    "PEFT（Parameter-Efficient Fine-Tuning）",
+                    "Constitutional AI"
+                ],
+                correct: 2,
+                explanation: "PEFT（Parameter-Efficient Fine-Tuning）是一类高效微调方法，主要目的是减少微调所需的计算资源，而不是专门用于模型对齐。RLHF、DPO和Constitutional AI都是为了使模型输出更符合人类偏好和价值观的对齐技术。"
+            },
+            {
+                question: "在大语言模型部署中，以下哪项不是推理服务器（Inference Server）通常需要考虑的优化目标？",
+                options: [
+                    "吞吐量（Throughput）",
+                    "延迟（Latency）",
+                    "资源利用率（Resource Utilization）",
+                    "预训练数据多样性（Pre-training Data Diversity）"
+                ],
+                correct: 3,
+                explanation: "预训练数据多样性是模型训练阶段的考虑因素，而非推理服务器优化目标。推理服务器主要关注吞吐量、延迟和资源利用率等运行时性能指标，以提供高效的服务体验。"
+            }
+        ];
+        
+        // 全局变量
+        let currentQuestion = 0;
+        let score = 0;
+        let selectedOption = null;
+        
+        // DOM元素
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const startBtn = document.getElementById('start-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const explanationText = document.getElementById('explanation-text');
+        const progressBar = document.getElementById('progress-bar');
+        const currentScoreDisplay = document.getElementById('current-score');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const resultComment = document.getElementById('result-comment');
+        const quizShareBtn = document.getElementById('quiz-share-btn');
+        const resultShareBtn = document.getElementById('result-share-btn');
+        const shareTip = document.getElementById('share-tip');
+        const closeTip = document.getElementById('close-tip');
+        
+        // 随机生成参与人数
+        document.getElementById('participant-number').textContent = (Math.floor(Math.random() * 5000) + 1000).toLocaleString();
+        
+        // 事件监听器
+        startBtn.addEventListener('click', startQuiz);
+        nextBtn.addEventListener('click', loadNextQuestion);
+        restartBtn.addEventListener('click', restartQuiz);
+        quizShareBtn.addEventListener('click', showShareTip);
+        resultShareBtn.addEventListener('click', showShareTip);
+        closeTip.addEventListener('click', hideShareTip);
+        
+        // 开始测验
+        function startQuiz() {
+            welcomeScreen.style.display = 'none';
+            quizScreen.style.display = 'block';
+            loadQuestion();
+        }
+        
+        // 加载问题
+        function loadQuestion() {
+            selectedOption = null;
+            nextBtn.style.display = 'none';
+            explanationText.style.display = 'none';
+            
+            const questionData = quizData[currentQuestion];
+            questionText.textContent = `${currentQuestion + 1}. ${questionData.question}`;
+            
+            // 清空选项容器
+            optionsContainer.innerHTML = '';
+            
+            // 添加选项
+            questionData.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.classList.add('option');
+                optionElement.textContent = `${String.fromCharCode(65 + index)}. ${option}`;
+                optionElement.dataset.index = index;
+                
+                optionElement.addEventListener('click', () => {
+                    if (selectedOption !== null) return; // 已经选择了选项，不允许再次选择
+                    
+                    selectedOption = index;
+                    
+                    // 标记选中的选项
+                    document.querySelectorAll('.option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    optionElement.classList.add('selected');
+                    
+                    // 检查答案
+                    checkAnswer();
+                });
+                
+                optionsContainer.appendChild(optionElement);
+            });
+            
+            // 更新进度条
+            updateProgress();
+        }
+        
+        // 检查答案
+        function checkAnswer() {
+            const questionData = quizData[currentQuestion];
+            const options = document.querySelectorAll('.option');
+            
+            // 标记正确和错误的选项
+            options.forEach((option, index) => {
+                if (index === questionData.correct) {
+                    option.classList.add('correct');
+                } else if (index === selectedOption) {
+                    option.classList.add('wrong');
+                }
+            });
+            
+            // 显示解释
+            explanationText.textContent = questionData.explanation;
+            explanationText.style.display = 'block';
+            
+            // 更新分数
+            if (selectedOption === questionData.correct) {
+                score++;
+                currentScoreDisplay.textContent = score;
+            }
+            
+            // 显示下一题按钮
+            nextBtn.style.display = 'block';
+        }
+        
+        // 加载下一题
+        function loadNextQuestion() {
+            currentQuestion++;
+            
+            if (currentQuestion < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+        
+        // 显示结果
+        function showResults() {
+            quizScreen.style.display = 'none';
+            resultScreen.style.display = 'block';
+            
+            finalScoreDisplay.textContent = score;
+            
+            // 根据分数给出评价
+            let comment = '';
+            if (score <= 3) {
+                comment = '继续学习！你对大语言模型的了解还处于入门阶段。';
+            } else if (score <= 6) {
+                comment = '不错！你对大语言模型有一定的了解，但还有提升空间。';
+            } else if (score <= 8) {
+                comment = '很好！你对大语言模型有较深入的理解。';
+            } else {
+                comment = '太棒了！你是大语言模型领域的专家！';
+            }
+            
+            resultComment.textContent = comment;
+            
+            // 配置微信分享
+            configWechatShare(score);
+        }
+        
+        // 重新开始测验
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            currentScoreDisplay.textContent = score;
+            resultScreen.style.display = 'none';
+            quizScreen.style.display = 'block';
+            loadQuestion();
+        }
+        
+        // 更新进度条
+        function updateProgress() {
+            const progressPercentage = (currentQuestion / quizData.length) * 100;
+            progressBar.style.width = `${progressPercentage}%`;
+        }
+        
+        // 微信分享配置
+        function configWechatShare(score) {
+            // 检查是否在微信环境中
+            const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+            
+            if (isWechat && typeof wx !== 'undefined') {
+                // 注意：实际使用时需要从服务器获取签名等信息
+                // 这里仅作为示例代码
+                wx.config({
+                    debug: false,
+                    appId: '你的appId', // 必填，公众号的唯一标识
+                    timestamp: '', // 必填，生成签名的时间戳
+                    nonceStr: '', // 必填，生成签名的随机串
+                    signature: '', // 必填，签名
+                    jsApiList: [
+                        'updateAppMessageShareData',
+                        'updateTimelineShareData'
+                    ]
+                });
+                
+                wx.ready(function() {
+                    // 分享到朋友圈
+                    wx.updateTimelineShareData({
+                        title: `我在大语言模型知识测验中获得了${score}分，你也来挑战一下吧！`,
+                        link: window.location.href,
+                        imgUrl: 'https://你的服务器地址/分享图片.jpg', // 分享图标
+                        success: function() {
+                            // 设置成功
+                            console.log('分享设置成功');
+                        }
+                    });
+                    
+                    // 分享给朋友
+                    wx.updateAppMessageShareData({
+                        title: '大语言模型知识测验',
+                        desc: `我在测验中获得了${score}分，你也来挑战一下吧！`,
+                        link: window.location.href,
+                        imgUrl: 'https://你的服务器地址/分享图片.jpg', // 分享图标
+                        success: function() {
+                            // 设置成功
+                            console.log('分享设置成功');
+                        }
+                    });
+                });
+                
+                wx.error(function(res) {
+                    // 配置失败处理
+                    console.error('微信接口配置失败:', res);
+                });
+            } else {
+                // 非微信环境，显示模拟分享提示
+                console.log('非微信环境，显示模拟分享提示');
+            }
+        }
+        
+        // 显示分享提示
+        function showShareTip() {
+            // 检查是否在微信环境中
+            const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+            
+            if (!isWechat) {
+                // 非微信环境，显示模拟分享提示
+                const shareText = `我在大语言模型知识测验中获得了${score}/10分，你也来挑战一下吧！`;
+                
+                // 更新分享提示内容
+                const tipElement = document.getElementById('share-tip');
+                tipElement.innerHTML = `
+                    <p>分享内容预览：</p>
+                    <div style="background: white; color: black; padding: 15px; border-radius: 8px; margin: 20px 0; max-width: 80%;">
+                        <p style="font-weight: bold;">大语言模型知识测验</p>
+                        <p>${shareText}</p>
+                    </div>
+                    <div class="qrcode-container">
+                        <p>扫描二维码分享给好友</p>
+                        <div id="qrcode"></div>
+                    </div>
+                    <p>在微信中打开时，点击右上角"..."可分享到朋友圈</p>
+                    <div class="close-tip" id="close-tip">我知道了</div>
+                `;
+                
+                // 生成二维码
+                if (typeof QRCode !== 'undefined') {
+                    setTimeout(() => {
+                        new QRCode(document.getElementById("qrcode"), {
+                            text: window.location.href,
+                            width: 128,
+                            height: 128,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    }, 100);
+                }
+                
+                // 重新绑定关闭按钮事件
+                document.getElementById('close-tip').addEventListener('click', hideShareTip);
+            }
+            
+            shareTip.style.display = 'flex';
+            
+            // 配置微信分享
+            configWechatShare(score);
+        }
+        
+        // 隐藏分享提示
+        function hideShareTip() {
+            shareTip.style.display = 'none';
+        }
+    </script>
+</body>
+</html> 
